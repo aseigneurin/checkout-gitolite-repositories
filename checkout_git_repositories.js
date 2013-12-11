@@ -1,3 +1,6 @@
+var Fiber = require("fibers");
+var Future = require("fibers/future"),
+  wait = Future.wait;
 var fs = require('fs');
 
 if (process.argv.length != 4) {
@@ -13,9 +16,8 @@ if (!fs.existsSync(repositoriesDirectory)) {
   process.exit(2);
 }
 
-checkoutRepository('gitolite-admin', true, function() {
-  checkoutRepositories();
-});
+checkoutRepository('gitolite-admin', true);
+checkoutRepositories();
 
 
 function checkoutRepositories() {
@@ -51,54 +53,56 @@ function parseFile(confFile) {
   });
 }
 
-function checkoutRepository(repository, pullIfExists, callback) {
+function checkoutRepository(repository, pullIfExists) {
   console.log('Checking out repository: ' + repository);
 
   var directory = repositoriesDirectory + '/' + repository;
-  fs.exists(directory, function(exists) {
-    if (exists) {
-      if (pullIfExists) {
-        gitPull(repository, directory, callback);
-      }
-    } else {
-      gitClone(repository, directory, callback);
+  var exists = fs.existsSync(directory);
+  if (exists) {
+    if (pullIfExists) {
+      gitPull(repository, directory);
     }
-  });
+  } else {
+    gitClone(repository, directory);
+  }
 }
 
-function gitPull(repository, directory, callback) {
+function gitPull(repository, directory) {
   console.log('Git pull ' + repository + ' in ' + directory);
 
   var options = {
     cwd: directory
   };
-  git(['pull'], callback, options);
+  git(['pull'], options);
 }
 
-function gitClone(repository, directory, callback) {
+function gitClone(repository, directory) {
   console.log('Git clone ' + repository + ' into ' + directory);
 
-  git(['clone', 'git@' + gitServer + ':' + repository, directory], callback);
+  git(['clone', 'git@' + gitServer + ':' + repository, directory]);
 }
 
-function git(args, callback, options) {
+function git(args, options) {
+  var future = new Future;
+
   var child_process = require('child_process');
-  var git = child_process.spawn('git', args, options);
+  var git = child_process.spawn('echo', args, options);
 
   git.stdout.on('data', function(data) {
-    console.log('stdout: ' + data);
+    //console.log('stdout: ' + data);
   });
 
   git.stderr.on('data', function(data) {
-    console.log('stderr: ' + data);
+    //console.log('stderr: ' + data);
   });
 
   git.on('exit', function(code) {
     if (code != 0) {
       console.log('Child process exited with exit code ' + code);
     }
-    if (typeof(callback) === 'function') {
-      callback();
-    }
+    future.
+    return ();
   });
+
+  future.resolve(function() {});
 }
