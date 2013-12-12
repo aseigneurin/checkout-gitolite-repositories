@@ -30,7 +30,7 @@ def parse_file(confFile)
   f = File.open(confFile)
   f.each do |line|
     next if !line.start_with?('repo ')
-    repository = line[5..-1]
+    repository = line[5..-1].chomp
     checkout_repository(repository, false)
   end
 end
